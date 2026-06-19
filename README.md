@@ -101,7 +101,10 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 # Database
 1. Install PostgreSQL
 2. Create database
-3. Run `npx prisma db push`
+3. Run `npx prisma migrate dev --name <migration_name>` for development or `npx prisma migrate deploy` for production
 4. Run `npx prisma generate`
 5. Run `npm run start:dev`
 6. Open `http://localhost:3000`
+
+# Database migration history
+- `npx prisma migrate dev --name <migration_name>`
