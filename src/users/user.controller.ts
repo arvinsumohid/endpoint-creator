@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UserLoginDto } from './user-login.dto';
+import { UserLoginDto } from './dtos/user-login.dto';
 
 @Controller()
 export class UserController {
@@ -8,6 +8,11 @@ export class UserController {
 
   @Post('login')
   login(@Body() body: UserLoginDto): string {
+    return 'Hello World!';
+  }
+
+  @Post('register')
+  register(@Body() body: UserLoginDto): string {
     return 'Hello World!';
   }
 }

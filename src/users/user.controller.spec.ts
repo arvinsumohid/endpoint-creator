@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { UserLoginDto } from './user-login.dto';
+import { UserLoginDto } from './dtos/user-login.dto';
+import { UserRegisterDto } from './dtos/user-register.dto';
 
 describe('UserController', () => {
   let userController: UserController;
@@ -63,6 +64,32 @@ describe('UserController', () => {
         token: expect.any(String),
         user: userLoginDto,
       });
+    });
+  });
+
+  describe('register', () => {
+    const userRegisterDto: UserRegisterDto = {
+      email: 'user@existing.com',
+      name: 'User',
+      password: 'password',
+    };
+
+    const newUserRegisterDto: UserRegisterDto = {
+      email: 'user@new.com',
+      name: 'New User',
+      password: 'password',
+    };
+
+    it('should return error if user already exists', () => {
+      expect(userController.register(userRegisterDto)).toBe(
+        'user already exists',
+      );
+    });
+
+    it('should return success when user is created', () => {
+      expect(userController.register(newUserRegisterDto)).toBe(
+        'successfully registered',
+      );
     });
   });
 });
