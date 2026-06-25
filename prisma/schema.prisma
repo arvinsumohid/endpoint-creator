@@ -9,8 +9,12 @@ datasource db {
 }
 
 model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
-  name     String?
-  password String
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  password  String
+  verified  Boolean  @default(false)
+  emailVerified DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
