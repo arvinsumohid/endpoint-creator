@@ -13,6 +13,7 @@ model User {
   email     String   @unique
   name      String?
   password  String
+  refreshToken String?
   verified  Boolean  @default(false)
   emailVerified DateTime?
   createdAt DateTime @default(now())

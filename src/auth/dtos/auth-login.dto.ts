@@ -5,5 +5,5 @@ export class AuthLoginDto {
 
 export class AuthLoginResponseDto {
   token: string;
-  user: AuthLoginDto;
+  refreshToken: string;
 }

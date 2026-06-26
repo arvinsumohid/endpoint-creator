@@ -55,6 +55,19 @@ describe('AuthController', () => {
       );
       expect(authService.login).toHaveBeenCalledWith(authLoginDto);
     });
+
+    it('should throw an error if the auth service login throws an error', async () => {
+      const authLoginDto: AuthLoginDto = {
+        email: 'user@nonexistent.com',
+        password: 'password',
+      };
+      authService.login.mockRejectedValue(new UnauthorizedException());
+
+      await expect(authController.login(authLoginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(authService.login).toHaveBeenCalledWith(authLoginDto);
+    });
   });
 
   describe('register', () => {

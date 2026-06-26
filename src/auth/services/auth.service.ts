@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 import 'dotenv/config';
 import {
   ConflictException,
@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CryptoService } from './crypto.service';
 import { AuthLoginDto, AuthLoginResponseDto } from '../dtos/auth-login.dto';
 import {
   AuthRegisterDto,
@@ -14,7 +15,11 @@ import {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly cryptoService: CryptoService,
+  ) {}
 
   getHello(): string {
     return 'Hello World!';
@@ -28,11 +33,35 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    // TODO: Check password
+    // Check password
+    const isPasswordValid = await this.cryptoService.comparePassword(
+      password,
+      user.password,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: '15m',
+    });
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '7d',
+    });
+
+    await this.updateRefreshToken(user.id, refreshToken);
 
     return {
-      token: 'token',
-      user: body,
+      token: accessToken,
+      refreshToken: refreshToken,
     };
   }
 
@@ -42,7 +71,7 @@ export class AuthService {
       throw new UnauthorizedException('User already exists');
     }
 
-    const hashedPassword = await this.hashPassword(body.password);
+    const hashedPassword = await this.cryptoService.hashPassword(body.password);
 
     const newUser = await this.createUser({
       email: body.email,
@@ -52,7 +81,7 @@ export class AuthService {
 
     return {
       email: newUser.email,
-      name: newUser.name,
+      name: newUser.name || '',
       id: newUser.id,
     };
   }
@@ -70,12 +99,6 @@ export class AuthService {
     });
   }
 
-  private async hashPassword(password: string): Promise<string> {
-    // TODO: Implement password hashing
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10);
-    return bcrypt.hash(password + process.env.PASSWORD_SALT, saltRounds);
-  }
-
   private async createUser(data: AuthRegisterDto) {
     try {
       return await this.prisma.user.create({
@@ -87,5 +110,18 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  private async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashedRefreshToken =
+      await this.cryptoService.hashPassword(refreshToken);
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshToken: hashedRefreshToken,
+      },
+    });
   }
 }

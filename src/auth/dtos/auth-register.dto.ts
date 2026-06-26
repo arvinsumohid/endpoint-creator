@@ -6,6 +6,6 @@ export class AuthRegisterDto {
 
 export class AuthRegisterResponseDto {
   email: string;
-  name: string | null;
+  name?: string;
   id: string;
 }
