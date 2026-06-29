@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import express from 'express';
 import { AuthService } from '../services/auth.service';
 import { AuthLoginDto } from '../dtos/auth-login.dto';
 import {
@@ -7,12 +8,17 @@ import {
   AuthRegisterResponseDto,
 } from '../dtos/auth-register.dto';
 import { AuthController } from './auth.controller';
+import { AuthLoginResponseDto } from '../dtos/auth-login.dto';
 
 describe('AuthController', () => {
   let authController: AuthController;
   let authService: jest.Mocked<
     Pick<AuthService, 'login' | 'register' | 'refresh'>
   >;
+  let spy: jest.SpyInstance;
+  const res = {
+    cookie: jest.fn(),
+  } as unknown as express.Response;
 
   beforeEach(async () => {
     authService = {
@@ -32,6 +38,8 @@ describe('AuthController', () => {
     }).compile();
 
     authController = app.get<AuthController>(AuthController);
+
+    spy = jest.spyOn(authController as any, 'setRefreshTokenCookie');
   });
 
   it('should be defined', () => {
@@ -44,16 +52,17 @@ describe('AuthController', () => {
         email: 'user@existing.com',
         password: 'password',
       };
-      const response = {
+      const response: AuthLoginResponseDto = {
         token: expect.any(String),
-        user: authLoginDto,
+        refreshToken: expect.any(String),
       };
       authService.login.mockResolvedValue(response);
 
-      await expect(authController.login(authLoginDto)).resolves.toEqual(
-        response,
-      );
+      await expect(authController.login(authLoginDto, res)).resolves.toEqual({
+        token: response.token,
+      });
       expect(authService.login).toHaveBeenCalledWith(authLoginDto);
+      expect(spy).toHaveBeenCalledWith(res, response.refreshToken);
     });
 
     it('should throw an error if the auth service login throws an error', async () => {
@@ -63,7 +72,7 @@ describe('AuthController', () => {
       };
       authService.login.mockRejectedValue(new UnauthorizedException());
 
-      await expect(authController.login(authLoginDto)).rejects.toThrow(
+      await expect(authController.login(authLoginDto, res)).rejects.toThrow(
         UnauthorizedException,
       );
       expect(authService.login).toHaveBeenCalledWith(authLoginDto);
@@ -110,10 +119,34 @@ describe('AuthController', () => {
 
   describe('refresh', () => {
     it('should return the auth service refresh response', async () => {
-      authService.refresh.mockResolvedValue('refresh');
+      const mockRefreshToken = 'mock-refresh-token';
+      authService.refresh.mockResolvedValue({
+        token: 'access-token',
+        refreshToken: mockRefreshToken,
+      });
 
-      await expect(authController.refresh()).resolves.toBe('refresh');
-      expect(authService.refresh).toHaveBeenCalled();
+      await expect(
+        authController.refresh(mockRefreshToken, res),
+      ).resolves.toEqual({
+        token: 'access-token',
+      });
+      expect(authService.refresh).toHaveBeenCalledWith(mockRefreshToken);
+    });
+
+    it('should set refresh token cookie', async () => {
+      const mockRefreshToken = 'mock-refresh-token';
+      authService.refresh.mockResolvedValue({
+        token: 'access-token',
+        refreshToken: mockRefreshToken,
+      });
+
+      await expect(
+        authController.refresh(mockRefreshToken, res),
+      ).resolves.toEqual({
+        token: 'access-token',
+      });
+      expect(authService.refresh).toHaveBeenCalledWith(mockRefreshToken);
+      expect(spy).toHaveBeenCalledWith(res, mockRefreshToken);
     });
   });
 });

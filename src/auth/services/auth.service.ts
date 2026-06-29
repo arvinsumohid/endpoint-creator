@@ -7,11 +7,17 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CryptoService } from './crypto.service';
-import { AuthLoginDto, AuthLoginResponseDto } from '../dtos/auth-login.dto';
+import {
+  AuthLoginDto,
+  AuthLoginResponseDto,
+  PayloadDto,
+} from '../dtos/auth-login.dto';
 import {
   AuthRegisterDto,
   AuthRegisterResponseDto,
 } from '../dtos/auth-register.dto';
+import { RefreshToken } from '../decorators/refresh-token.decorator';
+import { User } from 'generated/prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -42,20 +48,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-    };
-
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: '15m',
-    });
-
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: '7d',
-    });
+    const { accessToken, refreshToken } = await this.generateTokens(user);
 
     await this.updateRefreshToken(user.id, refreshToken);
 
@@ -86,12 +79,45 @@ export class AuthService {
     };
   }
 
-  async refresh(): Promise<string> {
-    // TODO: Implement refresh logic
-    return 'refresh';
+  async refresh(
+    @RefreshToken() refreshToken: string,
+  ): Promise<AuthLoginResponseDto> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+
+    //verify refresh token
+    const payload: PayloadDto = await this.jwtService.verifyAsync(
+      refreshToken,
+      {
+        secret: process.env.JWT_REFRESH_SECRET,
+      },
+    );
+
+    //find user by email
+    const user = await this.findUserByEmail(payload.email);
+
+    // compare refresh token
+    const isRefreshTokenValid = await this.cryptoService.compareRefreshToken(
+      refreshToken,
+      user?.refreshToken || '',
+    );
+
+    if (!isRefreshTokenValid) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } =
+      await this.generateTokens(user!);
+    await this.updateRefreshToken(user!.id, newRefreshToken);
+
+    return {
+      token: accessToken,
+      refreshToken: newRefreshToken,
+    };
   }
 
-  private async findUserByEmail(email: string) {
+  private async findUserByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: {
         email,
@@ -114,7 +140,7 @@ export class AuthService {
 
   private async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken =
-      await this.cryptoService.hashPassword(refreshToken);
+      await this.cryptoService.hashRefreshToken(refreshToken);
     return this.prisma.user.update({
       where: {
         id: userId,
@@ -123,5 +149,24 @@ export class AuthService {
         refreshToken: hashedRefreshToken,
       },
     });
+  }
+
+  private async generateTokens(user: User) {
+    const payload: PayloadDto = {
+      email: user.email,
+      sub: user.id,
+    };
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_ACCESS_SECRET,
+      expiresIn: '15m',
+    });
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '7d',
+    });
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 }
