@@ -14,8 +14,11 @@ import {
   AuthRegisterResponseDto,
 } from '../dtos/auth-register.dto';
 import { RefreshToken } from '../decorators/refresh-token.decorator';
+import { Public } from '../decorators/public.decorator';
 
 type AuthTokenResponse = Omit<AuthLoginResponseDto, 'refreshToken'>;
+
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
