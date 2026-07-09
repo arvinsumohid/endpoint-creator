@@ -17,7 +17,7 @@ import {
   AuthRegisterResponseDto,
 } from '../dtos/auth-register.dto';
 import { RefreshToken } from '../decorators/refresh-token.decorator';
-import { User } from 'generated/prisma/client';
+import { Prisma, User } from '../../../generated/prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -117,8 +117,12 @@ export class AuthService {
     };
   }
 
+  async logout(userId: string) {
+    await this.deleteRefreshToken(userId);
+  }
+
   private async findUserByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: {
         email,
       },
@@ -131,7 +135,10 @@ export class AuthService {
         data,
       });
     } catch (error: any) {
-      if (error.code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         throw new ConflictException('User already exists');
       }
       throw error;
@@ -168,5 +175,16 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  private async deleteRefreshToken(userId: string) {
+    return this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshToken: null,
+      },
+    });
   }
 }

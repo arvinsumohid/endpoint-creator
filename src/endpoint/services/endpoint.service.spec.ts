@@ -2,9 +2,14 @@ import { EndpointService } from './endpoint.service';
 
 describe('EndpointService', () => {
   let endpointService: EndpointService;
-  let prismaService: any;
+  let prismaService: {
+    endpoint: {
+      create: jest.Mock;
+      findUnique: jest.Mock;
+    };
+  };
 
-  beforeEach(async () => {
+  beforeEach(() => {
     prismaService = {
       endpoint: {
         create: jest.fn(),
@@ -39,7 +44,7 @@ describe('EndpointService', () => {
       const result = await endpointService.createEndpoint(userId, body);
 
       expect(result).toEqual({
-        id: expect.any(String),
+        id: '1',
         userId,
         name: body.name,
         description: body.description,

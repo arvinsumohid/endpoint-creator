@@ -4,8 +4,19 @@ import { JwtService } from '@nestjs/jwt';
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let prismaService: any;
-  let cryptoService: any;
+  let prismaService: {
+    user: {
+      findUnique: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+    };
+  };
+  let cryptoService: {
+    hashPassword: jest.Mock;
+    hashRefreshToken: jest.Mock;
+    comparePassword: jest.Mock;
+    compareRefreshToken: jest.Mock;
+  };
   let jwtService: JwtService;
   const mockUser = {
     id: '1',

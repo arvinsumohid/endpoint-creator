@@ -53,8 +53,8 @@ describe('AuthController', () => {
         password: 'password',
       };
       const response: AuthLoginResponseDto = {
-        token: expect.any(String),
-        refreshToken: expect.any(String),
+        token: 'access-token',
+        refreshToken: 'refresh-token',
       };
       authService.login.mockResolvedValue(response);
 

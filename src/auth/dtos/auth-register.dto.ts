@@ -13,10 +13,10 @@ export class AuthRegisterDto {
 
 export class AuthRegisterResponseDto {
   @IsEmail()
-  email: string;
+  email: AuthRegisterDto['email'];
 
   @IsString()
-  name?: string;
+  name?: AuthRegisterDto['name'];
 
   @IsString()
   id: string;

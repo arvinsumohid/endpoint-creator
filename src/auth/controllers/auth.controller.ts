@@ -4,11 +4,16 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
 } from '@nestjs/common';
 import express from 'express';
 import { AuthService } from '../services/auth.service';
-import { AuthLoginDto, AuthLoginResponseDto } from '../dtos/auth-login.dto';
+import {
+  AuthLoginDto,
+  AuthLoginResponseDto,
+  PayloadDto,
+} from '../dtos/auth-login.dto';
 import {
   AuthRegisterDto,
   AuthRegisterResponseDto,
@@ -53,12 +58,31 @@ export class AuthController {
     return tokenResponse;
   }
 
+  @Post('logout')
+  async logout(
+    @Req() req: express.Request,
+    @Res({ passthrough: true }) res: express.Response,
+  ) {
+    const { sub: userId } = req.user as PayloadDto;
+    await this.authService.logout(userId);
+    this.clearRefreshTokenCookie(res);
+    return { message: 'Logged out successfully' };
+  }
+
   private setRefreshTokenCookie(res: express.Response, refreshToken: string) {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+
+  private clearRefreshTokenCookie(res: express.Response) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
     });
   }
 }

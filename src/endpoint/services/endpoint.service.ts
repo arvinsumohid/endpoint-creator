@@ -9,7 +9,7 @@ export class EndpointService {
   async createEndpoint(userId: string, body: CreateEndpointDto) {
     const endpoint = await this.prisma.endpoint.findUnique({
       where: {
-        id: userId,
+        userId,
         path: body.path,
       },
     });

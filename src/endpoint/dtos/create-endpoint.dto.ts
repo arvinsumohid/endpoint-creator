@@ -1,11 +1,32 @@
+import { IsNumber, IsOptional, IsString } from 'class-validator';
+
 export class CreateEndpointDto {
-  name: string;
+  @IsString()
+  name!: string;
+
+  @IsString()
+  @IsOptional()
   description?: string;
-  path: string;
-  requestBody: any;
-  responseBody: any;
-  statusCode: number;
-  headers: any;
-  queryParams: any;
-  pathParams: any;
+
+  @IsString()
+  path!: string;
+
+  @IsOptional()
+  requestBody?: Record<string, unknown>;
+
+  @IsOptional()
+  responseBody?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsNumber()
+  statusCode?: number;
+
+  @IsOptional()
+  headers?: Record<string, unknown>;
+
+  @IsOptional()
+  queryParams?: Record<string, unknown>;
+
+  @IsOptional()
+  pathParams?: Record<string, unknown>;
 }
