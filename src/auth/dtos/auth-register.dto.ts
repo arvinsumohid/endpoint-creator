@@ -2,22 +2,22 @@ import { IsEmail, IsString } from 'class-validator';
 
 export class AuthRegisterDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   name?: string;
 
   @IsString()
-  password: string;
+  password!: string;
 }
 
 export class AuthRegisterResponseDto {
   @IsEmail()
-  email: AuthRegisterDto['email'];
+  email!: AuthRegisterDto['email'];
 
   @IsString()
   name?: AuthRegisterDto['name'];
 
   @IsString()
-  id: string;
+  id!: string;
 }

@@ -22,11 +22,11 @@ export class CreateEndpointDto {
   statusCode?: number;
 
   @IsOptional()
-  headers?: Record<string, unknown>;
+  headers?: Record<string, unknown> | null;
 
   @IsOptional()
-  queryParams?: Record<string, unknown>;
+  queryParams?: Record<string, unknown> | null;
 
   @IsOptional()
-  pathParams?: Record<string, unknown>;
+  pathParams?: Record<string, unknown> | null;
 }

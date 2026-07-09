@@ -94,7 +94,7 @@ describe('AuthController', () => {
       };
       const response: AuthRegisterResponseDto = {
         email: authRegisterDto.email,
-        name: authRegisterDto.name || null,
+        name: authRegisterDto.name,
         id: 'user-id',
       };
       authService.register.mockResolvedValue(response);
